@@ -17,6 +17,4 @@ Network::Network(int nbreInput, int nbreOutput, int nbreRecursiveOutput, int nbr
 
     this->constantVector = new VectorXd[this->nbreVectorConstant];
     this->constantMatrix = new MatrixXd[this->nbreMatrixConstant];
-
-
 }

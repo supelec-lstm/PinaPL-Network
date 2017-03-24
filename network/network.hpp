@@ -10,7 +10,7 @@ struct Memory {
     std::vector<Eigen::VectorXd> input;
     std::vector<Eigen::VectorXd> output;
     std::vector<Eigen::VectorXd> memory;
-}
+};
 
 class Network {
 
@@ -27,7 +27,6 @@ private:
     int** relation;
 
     Network* reverseNetwork;
-    Operation* operations;
 
     Eigen::VectorXd* constantVector;
     Eigen::MatrixXd* constantMatrix;
