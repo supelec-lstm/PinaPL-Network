@@ -1,4 +1,4 @@
-OBJS = main.cpp
+OBJS = main.cpp network.o graph.o
 CC = clang++
 CFLAGS = -std=c++11 -Ofast -I /usr/include/eigen3/ -w -c
 LFLAGS = -std=c++11 -Ofast -I /usr/include/eigen3/ -w
@@ -6,11 +6,14 @@ LFLAGS = -std=c++11 -Ofast -I /usr/include/eigen3/ -w
 Build : $(OBJS)
 	$(CC) $(LFLAGS) -o Build $(OBJS)
 
-#network.o : network/network.hpp network/network.cpp
-#	$(CC) $(CFLAGS) network/network.cpp -o network.o
+network.o : network/network.cpp node.o graph.o
+	$(CC) $(CFLAGS) network/network.cpp -o network.o
 
-#operation.o : network/operation.hpp network/operation.cpp
-#	$(CC) $(CFLAGS) network/operation.cpp -o operation.o
+graph.o : network/graph.cpp
+	$(CC) $(CFLAGS) network/graph.cpp -o graph.o
 
 clean:
-	\rm *.o *~ build
+	rm *.o *~
+
+mrproper:
+	rm Build

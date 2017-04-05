@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include <vector>
 
-#include "operation.hpp"
+#include "graph.hpp"
 
 struct Memory {
     std::vector<Eigen::VectorXd> input;
@@ -16,13 +16,13 @@ class Network {
 
 private:
 
-    int nbreInput;
-    int nbreOutput;
-    int nbreRecursiveOutput;
+    int nbInput;
+    int nbOutput;
+    int nbRecursiveOutput;
 
-    int nbreNode;
-    int nbreVectorConstant;
-    int nbreMatrixConstant;
+    int nbNode;
+    int nbVectorConstant;
+    int nbMatrixConstant;
 
     int** relation;
 
@@ -31,14 +31,14 @@ private:
     Eigen::VectorXd* constantVector;
     Eigen::MatrixXd* constantMatrix;
 
+    bool* marque;
+
+    int findMinimum();
+
+
 public:
 
-    Network(int nbreInput, int nbreOutput, int nbreRecursiveOutput, int nbreNode, int nbreVectorConstant, int nbreMatrixConstant);
-
-    void init(int** relation, OperationType* operations);
-    void init(std::vector<int> relation, OperationType* operations);
-
-    void verify();
+    Network(Graph* graph);
 
     void setReverseNetwork();
 };
