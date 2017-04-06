@@ -104,6 +104,5 @@ vector<int> Graph::getOutput(int j) {
 			}
 		}
 	}
-	cout << j << " " << res[0] << endl;
 	return res;
 }

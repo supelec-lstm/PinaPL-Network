@@ -6,7 +6,7 @@ LFLAGS = -std=c++11 -Ofast -I /usr/include/eigen3/ -w
 Build : $(OBJS)
 	$(CC) $(LFLAGS) -o Build $(OBJS)
 
-network.o : network/network.cpp node.o graph.o
+network.o : network/network.cpp graph.o
 	$(CC) $(CFLAGS) network/network.cpp -o network.o
 
 graph.o : network/graph.cpp
