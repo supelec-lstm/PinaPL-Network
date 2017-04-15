@@ -18,29 +18,18 @@ private:
 
     int nbInput;
     int nbOutput;
-    int nbRecursiveOutput;
 
     int nbNode;
-    int nbVectorConstant;
-    int nbMatrixConstant;
 
-    int** relation;
+    int* interMemoryPath(Graph* graph);
 
-    Network* reverseNetwork;
-
-    Eigen::VectorXd* constantVector;
-    Eigen::MatrixXd* constantMatrix;
-
-    bool* marque;
-
-    int findMinimum();
-
+    std::vector<int> fusionVector(std::vector<int> a, std::vector<int> b);
+    void insertVector(std::vector<int> &a, int b);
+    int minFreeVector(std::vector<int> a);
 
 public:
 
     Network(Graph* graph);
-
-    void setReverseNetwork();
 };
 
 #endif //HEADER_NETWORK

@@ -83,26 +83,53 @@ int Graph::getNbInput() {
 }
 
 int Graph::getNbInput(int j) {
-	return this->nbInputNode[j];
+	if(j < this->nbInput) {
+		return 0;
+	} else {
+		return this->nbInputNode[j - this->nbInput];
+	}
 }
 
 int Graph::getNbOutput() {
 	return this->nbOutput;
 }
 
-int Graph::getNbNode() {
-	return this->nbNode;
-}
-
-vector<int> Graph::getOutput(int j) {
-	vector<int> res;
+int Graph::getNbOutput(int j) {
+	int res = 0;
 	for(int i = 0; i < this->nbNode; i++) {
 		for(int k = 0; k < this->nbInputNode[i]; k++) {
 			if(this->inputNodes[i][k] == j) {
-				res.push_back(i + this->nbInput);
+				res++;
 				break;
 			}
 		}
 	}
 	return res;
+}
+
+int Graph::getNbNode() {
+	return this->nbNode;
+}
+
+int* Graph::getOutput(int j) {
+	int* res = new int[this->getNbOutput(j)];
+	int l = 0;
+	for(int i = 0; i < this->nbNode; i++) {
+		for(int k = 0; k < this->nbInputNode[i]; k++) {
+			if(this->inputNodes[i][k] == j) {
+				res[l] = i + nbInput;
+				l++;
+				break;
+			}
+		}
+	}
+	return res;
+}
+
+int* Graph::getInput(int j) {
+	if(j < this->nbInput) {
+		return nullptr;
+	} else {
+		return this->inputNodes[j - this->nbInput];
+	}
 }

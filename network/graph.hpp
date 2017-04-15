@@ -51,8 +51,10 @@ public:
 	int getNbInput();
 	int getNbInput(int j);
 	int getNbOutput();
+	int getNbOutput(int j);
 	int getNbNode();
-	std::vector<int> getOutput(int j);
+	int* getOutput(int j);
+	int* getInput(int j);
 };
 
 #endif //HEADER_GRAPH
