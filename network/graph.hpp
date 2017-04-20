@@ -5,6 +5,7 @@
 #include <vector>
 
 enum OperationType {
+	NO_OPERATION,
     ADDITION,
     ADDITION_CONSTANT,
     PRODUCT_CONSTANT,
@@ -14,6 +15,33 @@ enum OperationType {
     TANH
 };
 
+struct DimensionalError : public std::exception {
+	const char * what () const throw () {
+		return "Mauvais dimensionnement";
+	}
+};
+
+struct Node {
+	int size;
+	OperationType operation;
+	int nbInput;
+	std::vector<int> input;
+	int nbOutput;
+	std::vector<int> output;
+	int nbParam;
+	std::vector<int> param;
+	bool isOutput;
+};
+
+struct VectorParam {
+	int size;
+};
+
+struct MatrixParam {
+	int sizeX;
+	int sizeY;
+};
+
 class Graph {
 
 private:
@@ -21,40 +49,54 @@ private:
 	int nbInput;
 	int nbOutput;
 	int nbNode;
+	int nbVectorParams;
+	int nbMatrixParams;
 
-	std::vector<OperationType> operations;
-	std::vector<int> nbInputNode;
-	std::vector<int*> inputNodes;
+	std::vector<Node> nodes;
+	std::vector<Node> output;
 
-	std::vector<int> outputNodes;
+	std::vector<VectorParam> vectorParams;
+	std::vector<MatrixParam> matrixParams;
 
-	std::vector<int> nbParam;
-	std::vector<int*> params;
-
-	void addNode(OperationType operation, int nbEntry, int* entry, int nbParam, int* param);
+	int addNode(OperationType operation, int nbEntry, int* entry, int nbParam, int* param, int size);
 
 public:
 
-	Graph(int nbreInput, int nbreOutput);
+	Graph(int nbInput, std::vector<int> sizeInput, int nbVectorParams, std::vector<int> sizeVectorParams, int nbMatrixParams, std::vector<std::pair<int, int> > sizeMatrixParams);
 
-	void addOutput(int n);
-	void addRecursiveOutput(int n, int m);
+	void setOutput(int n);
 
-	void addNodeAddition(int e1, int e2);
-	void addNodeAdditionConstant(int e, int p);
-	void addNodeProductConstant(int e, int p);
-	void addNodeHadamard(int e1, int e2);
-	void addNodeHadamardConstant(int e, int p);
-	void addNodeSigmoid(int e);
-	void addNodeTanh(int e);
+	int addNodeAddition(int e1, int e2);
+	int addNodeAdditionConstant(int e, int p);
+	int addNodeProductConstant(int e, int p);
+	int addNodeHadamard(int e1, int e2);
+	int addNodeHadamardConstant(int e, int p);
+	int addNodeSigmoid(int e);
+	int addNodeTanh(int e);
+
+	int addPerceptron(int x, int m, int b);
+	int addGate(int x1, int m1, int x2, int m2, int b);
+	int addBlock(int x1, int m1, int x2, int m2, int b);
 
 	int getNbInput();
 	int getNbInput(int j);
 	int getNbOutput();
 	int getNbOutput(int j);
+	int getNbParams(int j);
 	int getNbNode();
+	int getNbVector();
+	int getNbMatrix();
+
 	int* getOutput(int j);
 	int* getInput(int j);
+	int* getParams(int j);
+
+	OperationType getOperation(int j);
+
+	int getSizeNode(int j);
+	int getSizeVector(int j);
+	int getSizeMatrixRows(int j);
+	int getSizeMatrixCols(int j);
 };
 
 #endif //HEADER_GRAPH

@@ -1,4 +1,4 @@
-OBJS = main.cpp network.o graph.o
+OBJS = main.cpp network.o graph.o function.o
 CC = clang++
 CFLAGS = -std=c++11 -Ofast -I /usr/include/eigen3/ -w -c
 LFLAGS = -std=c++11 -Ofast -I /usr/include/eigen3/ -w
@@ -11,6 +11,9 @@ network.o : network/network.cpp graph.o
 
 graph.o : network/graph.cpp
 	$(CC) $(CFLAGS) network/graph.cpp -o graph.o
+
+function.o : network/function.cpp
+	$(CC) $(CFLAGS) network/function.cpp -o function.o
 
 clean:
 	rm *.o *~

@@ -8,9 +8,9 @@
 #include "graph.hpp"
 
 struct Memory {
-    std::vector<Eigen::VectorXd> input;
-    std::vector<Eigen::VectorXd> output;
-    std::vector<Eigen::VectorXd> memory;
+    Eigen::VectorXd* input;
+    Eigen::VectorXd* output;
+    Eigen::VectorXd* memory;
 };
 
 class Network {
@@ -19,16 +19,33 @@ private:
 
     int nbInput;
     int nbOutput;
-
     int nbNode;
+    int nbVector;
+    int nbMatrix;
 
-    int* interMemoryPath(Graph* graph);
+    int nbInter;
+
+    Eigen::VectorXd* interOutput;
+    Eigen::VectorXd* interInput;
+    Eigen::VectorXd* interResult;
+    Eigen::VectorXd* vectorParams;
+    Eigen::MatrixXd* matrixParams;
+
+    int nbForward;
+    std::function<void()>* forward;
+
+    std::vector<std::vector<int> > getPath(Graph* graph);
+    int* getInterMemoryPath(Graph* graph);
+    void fillActionFunction(Graph* graph, int* inter);
+    std::function<void()> getFunction(Graph* graph, int* inter, int node);
 
     int minFreeVector(std::set<int> a);
 
 public:
 
     Network(Graph* graph);
+
+    Eigen::VectorXd* forwardCalcul(Eigen::VectorXd* input);
 };
 
 #endif //HEADER_NETWORK

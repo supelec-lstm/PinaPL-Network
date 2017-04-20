@@ -1,62 +1,70 @@
 #include <Eigen/Dense>
 #include <iostream>
+#include <vector>
+#include <ctime>
+#include <math.h>
 
+#define LOG
+#define FILE_NAME "main.cpp\t\t"
+
+#include "log.hpp"
 #include "network/network.hpp"
+
+using namespace std;
+using namespace Eigen;
+
+int tab_log = 1;
 
 Graph* getLSTMGraph();
 Graph* getPerceptronGraph();
-
 int main(int argc, char **argv) {
-    Network* network = new Network(getLSTMGraph());
+	Network* network = new Network(getLSTMGraph());
+	VectorXd* input = new VectorXd[3];
+	VectorXd v(7);
+	v << 1, 1, 1, 1, 1, 1, 1;
+	input[0] = v;
+	input[1] = v;
+	input[2] = v;
+	network->forwardCalcul(input);
 }
 
 Graph* getLSTMGraph() {
+	PRINT_BEGIN_FUNCTION("getLSTMGraph")
 	int n = 3;
-    Graph* graph = new Graph(n, 2);
+	vector<int> sizeInput = {7, 7, 7};
+	vector<int> sizeVectorParams = {7, 7, 7, 7};
+	vector<pair<int, int> > sizeMatrixParams = {{7, 7}, {7, 7}, {7, 7}, {7, 7}, {7, 7}, {7, 7}, {7, 7}, {7, 7}};
 
-    graph->addNodeProductConstant(1, 0);			//0
-    graph->addNodeProductConstant(2, 1);			//1
-    graph->addNodeAddition(n, n+1);					//2
-    graph->addNodeAdditionConstant(n+2, 0);			//3
-    graph->addNodeSigmoid(n+3);						//4
+    Graph* graph = new Graph(n, sizeInput, 4, sizeVectorParams, 8, sizeMatrixParams);
 
-    graph->addNodeProductConstant(1, 2);			//5
-    graph->addNodeProductConstant(2, 3);			//6
-    graph->addNodeAddition(n+5, n+6);				//7
-    graph->addNodeAdditionConstant(n+7, 1);			//8
-    graph->addNodeSigmoid(n+8);						//9
+    int f = graph->addGate(1, 0, 2, 1, 0);
+    int i = graph->addGate(1, 2, 2, 3, 1);
+    int z = graph->addBlock(1, 4, 2, 5, 2);
+    int o = graph->addGate(1, 6, 2, 7, 3);
 
-    graph->addNodeProductConstant(1, 4);			//10
-    graph->addNodeProductConstant(2, 5);			//11
-    graph->addNodeAddition(n+10, n+11);				//12
-    graph->addNodeAdditionConstant(n+12, 2);		//13
-    graph->addNodeTanh(n+13);						//14
+    int c = graph->addNodeAddition(graph->addNodeHadamard(0, f), graph->addNodeHadamard(i, z));
+    int y = graph->addNodeHadamard(graph->addNodeTanh(c), o);
 
-    graph->addNodeProductConstant(1, 6);			//15
-    graph->addNodeProductConstant(2, 7);			//16
-    graph->addNodeAddition(n+15, n+16);				//17
-    graph->addNodeAdditionConstant(n+17, 3);		//18
-    graph->addNodeSigmoid(n+18);					//19
+    graph->setOutput(c);
+    graph->setOutput(y);
 
-    graph->addNodeHadamard(0, n+4);					//20
-    graph->addNodeHadamard(n+9, n+14);				//21
-    graph->addNodeAddition(n+20, n+21);				//22
-
-    graph->addNodeTanh(n+22);						//23
-    graph->addNodeHadamard(n+23, n+19);				//24
-
+    PRINT_END_FUNCTION()
     return graph;
 }
 
 Graph* getPerceptronGraph() {
+	PRINT_BEGIN_FUNCTION("getPerceptronGraph")
 	int n = 2;
-	Graph* graph = new Graph(n, 1);
+	vector<int> sizeInput = {7, 7, 7};
+	vector<int> sizeVectorParams = {7};
+	vector<pair<int, int> > sizeMatrixParams = {{7, 7}, {7, 7}};
 
-	graph->addNodeProductConstant(1, 0);			//0
-    graph->addNodeProductConstant(2, 1);			//1
-    graph->addNodeAddition(n, n+1);					//2
-    graph->addNodeAdditionConstant(n+2, 0);			//3
-    graph->addNodeSigmoid(n+3);						//4
+	Graph* graph = new Graph(n, sizeInput, 1, sizeVectorParams, 2, sizeMatrixParams);	
 
+	int y = graph->addGate(0, 0, 1, 1, 0);
+
+	graph->setOutput(y);
+
+	PRINT_END_FUNCTION()
     return graph;
 }
