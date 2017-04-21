@@ -169,20 +169,18 @@ void Network::fillActionFunction(Graph* graph, int* inter) {
 
 		if(!marqued[j]) {
 			stack<int> interStack;
-			
+
 			// Main path of the graph
-			while(true) {
 
-				int i;
-				int n;
+			int i;
+			int n;
 
-				int* output = graph->getOutput(j);
-				n = graph->getNbOutput(j);
+			int* output = graph->getOutput(j);
+			n = graph->getNbOutput(j);
 
-				for(i = 0; i < n && marqued[output[i]]; i++);
-				if(i != n) {
-					break;
-				}
+			for(i = 0; i < n && marqued[output[i]]; i++);
+			if(i == n) {
+				PRINT_LOG(j)
 
 				marqued[j] = true;
 				this->forward[k] = this->getFunction(graph, inter, j);
@@ -192,23 +190,20 @@ void Network::fillActionFunction(Graph* graph, int* inter) {
 				n = graph->getNbInput(j);
 
 				for(i = 0; i < n && marqued[input[i]]; i++);
-				if(i == n) {
-					break;
-				}
-				else {
-					j = input[i];
+				if(i != n) {
+					mainStack.push(input[i]);
 					i++;
 					for(nullptr; i < n; i++){
 						interStack.push(input[i]);
 					}
+
+					//We fill the main stack with the intermediate stack
+
+					while(!interStack.empty()) {
+						mainStack.push(interStack.top());
+						interStack.pop();
+					}
 				}
-			}
-
-			//We fill the main stack with the intermediate stack
-
-			while(!interStack.empty()) {
-				mainStack.push(interStack.top());
-				interStack.pop();
 			}
 		}
 	}
