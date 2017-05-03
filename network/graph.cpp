@@ -206,11 +206,13 @@ int Graph::addBlock(int x1, int m1, int x2, int m2, int b) {
 	return this->addNodeTanh(y);
 }
 
+int Graph::add
+
 void Graph::setOutput(int n) {
 	PRINT_BEGIN_FUNCTION("setOutput")
 
 	this->nodes[n].isOutput = true;
-	this->output.push_back(this->nodes[n]);
+	this->output.push_back(n);
 	this->nbOutput++;
 	PRINT_END_FUNCTION()
 }
@@ -301,6 +303,18 @@ OperationType Graph::getOperation(int j) {
 	PRINT_END_FUNCTION()
 	if(j >= this->nbInput) {
 		return this->nodes[j].operation;
+	}
+}
+
+bool Graph::isOutput(int j) {
+	return this->nodes[j].isOutput;
+}
+
+int Graph::indexOutput(int j) {
+	for(int i = 0; i < this->nbOutput; i++) {
+		if(this->output[i] == j) {
+			return i;
+		}
 	}
 }
 

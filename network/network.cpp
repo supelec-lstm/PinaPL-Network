@@ -36,7 +36,11 @@ Network::Network(Graph* graph) {
 		this->matrixParams[i] = MatrixXd::Random(graph->getSizeMatrixRows(i), graph->getSizeMatrixCols(i));
 	}
 
-	int* inter = this->getInterMemoryPath(graph);
+
+	int* inter = new int[this->nbNode];
+	int* order = new int[this->nbNode];
+
+	this->fillOrder(inter, order, graph);
 	this->nbInter = 0;
 	for(int i = 0; i < this->nbNode; i++) {
 		if(this->nbInter < inter[i]) {
@@ -46,258 +50,190 @@ Network::Network(Graph* graph) {
 	this->nbInter++;
 
 	this->interOutput = new VectorXd[this->nbInter];
-	this->fillActionFunction(graph, inter);
+	this->interResult = new VectorXd[this->nbOutput];
+	this->fillActionFunction(inter, order, graph);
 
 	PRINT_END_FUNCTION()
 }
 
-int* Network::getInterMemoryPath(Graph* graph) {
-	PRINT_BEGIN_FUNCTION("getInterMemoryPath")
+void Network::fillOrder(int* inter, int* order, Graph* graph) {
+	PRINT_BEGIN_FUNCTION("fillOrder")
 
-	int taille = this->nbNode;
+	//Pre-numerotation of everyNode and sorting
 
-	set<int>* locked = new set<int>[this->nbNode];
-	set<int> lockedGlobal;
-	
-	int* inter = new int[this->nbNode];
-	for(int j = 0; j < taille; j++) {
+	vector<vector<int>> interOrder(this->nbNode);
+	vector<int> maxInter(this->nbNode);
+
+	for(int j = 0; j < this->nbNode; j++) {
+		int n = graph->getNbInput(j);
+		int* input = graph->getInput(j);
+		int m = 1;
+		for(int i = 0; i < n; i++) {
+			int k = i-1;
+			interOrder[j].push_back(input[i]);
+			while(k >= 0 && maxInter[interOrder[j][k]] < maxInter[interOrder[j][k+1]]){
+				int a = interOrder[j][k];
+				interOrder[j][k] = interOrder[j][k+1];
+				interOrder[j][k+1] = a;
+				k--;
+			}
+		}
+		for(int i = 0; i < n; i++) {
+			if(m < maxInter[interOrder[j][i]] + i) {
+				m = maxInter[interOrder[j][i]] + i;
+			}
+		}
+		maxInter[j] = m;
+	}
+
+	//Initialization
+
+	for(int j = 0; j < this->nbNode; j++) {
 		inter[j] = -1;
 	}
 
+	int* reverseOrder = new int[this->nbNode];
+
 	stack<int> mainStack;
 	for(int j = 0; j < this->nbNode; j++) {
 		if(graph->getNbOutput(j) == 0) {
 			mainStack.push(j);
 		}
 	}
-
-	while(mainStack.size() != 0) {
-
-		int j = mainStack.top();
-		mainStack.pop();
-
-		if(inter[j] == -1) {
-			stack<int> interStack;
-			set<int> interLocked;
-
-			// Determination of the value of the branch
-			int* outputMain = graph->getOutput(j);
-			int m = graph->getNbOutput(j);
-
-			for(int i = 0; i < m; i++) {
-				if(inter[outputMain[i]] != -1) {
-					interLocked.insert(locked[outputMain[i]].begin(), locked[outputMain[i]].end());
-				}
-			}
-
-			set<int> finalLocked;
-			finalLocked.insert(interLocked.begin(), interLocked.end());
-			finalLocked.insert(lockedGlobal.begin(), lockedGlobal.end());
-
-			int k = this->minFreeVector(finalLocked);
-			interLocked.insert(k);
-
-			// Main path of the graph
-			while(true) {
-				locked[j] = interLocked;
-				inter[j] = k;
-
-				int i;
-				int n;
-
-				int* output = graph->getOutput(j);
-				n = graph->getNbOutput(j);
-
-				for(i = 0; i < n && inter[output[i]] != -1; i++);
-				if(i != n) {
-					lockedGlobal.insert(k);
-					break;
-				}
-
-				int* input = graph->getInput(j);
-				n = graph->getNbInput(j);
-
-				for(i = 0; i < n && inter[input[i]] != -1; i++);
-				if(i == n) {
-					break;
-				}
-				else {
-					j = input[i];
-					i++;
-					for(nullptr; i < n; i++){
-						interStack.push(input[i]);
-					}
-				}
-			}
-
-			//We fill the main stack with the intermediate stack
-
-			while(!interStack.empty()) {
-				mainStack.push(interStack.top());
-				interStack.pop();
-			}
-		}
-	}
-
-	PRINT_END_FUNCTION()
-	return inter;
-}
-
-void Network::fillActionFunction(Graph* graph, int* inter) {
-	PRINT_BEGIN_FUNCTION("fillActionFunction")
-
-	this->nbForward = this->nbNode;
-	this->forward = new function<void()>[this->nbNode];
 
 	int k = this->nbNode - 1;
 
-	// Main actions
+	// Main loop
 
-	bool* marqued = new bool[this->nbNode];
-	stack<int> mainStack;
-	for(int j = 0; j < this->nbNode; j++) {
-		if(graph->getNbOutput(j) == 0) {
-			mainStack.push(j);
-		}
-		marqued[j] = false;
-	}
-
-	while(mainStack.size() != 0) {
-
+	while(!mainStack.empty()) {
 		int j = mainStack.top();
 		mainStack.pop();
 
-		if(!marqued[j]) {
-			stack<int> interStack;
+		// Check if every output of the node is already tagged
 
-			// Main path of the graph
+		int* output = graph->getOutput(j);
+		int n = graph->getNbOutput(j);
+		int i, m = 0;
+		for(i = 0; i < n & inter[output[i]] != -1; i++) {
+			if(reverseOrder[output[i]] > reverseOrder[output[m]]) {
+				m = i;
+			}
+		}
+		if(i != n) {
+			continue;
+		}
 
-			int i;
-			int n;
+		// Set of the order
 
-			int* output = graph->getOutput(j);
-			n = graph->getNbOutput(j);
+		order[k] = j;
+		reverseOrder[j] = k;
 
-			for(i = 0; i < n && marqued[output[i]]; i++);
-			if(i == n) {
-				PRINT_LOG(j)
+		// Search for the number of the memory node
 
-				marqued[j] = true;
-				this->forward[k] = this->getFunction(graph, inter, j);
-				k--;
+		set<int> tagged;
+		if(n!=0) {
+			for(i = k+1; i < reverseOrder[output[m]]; i++) {
+				tagged.insert(inter[order[i]]);
+			}
+		}
+		k--;
+		int tagNb;
+		for(tagNb = 0; tagged.count(tagNb) == 1; tagNb++);
+		inter[j] = tagNb;
 
-				int* input = graph->getInput(j);
-				n = graph->getNbInput(j);
+		// We fill the stack with the input of the node
 
-				for(i = 0; i < n && marqued[input[i]]; i++);
-				if(i != n) {
-					mainStack.push(input[i]);
-					i++;
-					for(nullptr; i < n; i++){
-						interStack.push(input[i]);
-					}
+		for(i = 0; i < interOrder[j].size(); i++){
+			mainStack.push(interOrder[j][i]);
+		}
+	}
 
-					//We fill the main stack with the intermediate stack
+	PRINT_END_FUNCTION()
+}
 
-					while(!interStack.empty()) {
-						mainStack.push(interStack.top());
-						interStack.pop();
-					}
-				}
+void Network::fillActionFunction(int* inter, int* order, Graph* graph) {
+	PRINT_BEGIN_FUNCTION("fillActionFunction")
+	for(int j = 0; j < this->nbNode; j++) {
+		int node = order[j];
+		int in = inter[node];
+		if(node < this->nbInput) {
+			function<void()> func = [node, in, this]() -> void {
+				this->interOutput[in] = this->interInput[node];
+			};
+			this->forward.push_back(func);
+		} else {
+			int* input = graph->getInput(node);
+			int* param = graph->getParams(node);
+			int i1;
+			int i2;
+			function<void()> func;
+
+			switch(graph->getOperation(node)) {
+				case ADDITION:
+					i1 = inter[input[0]];
+					i2 = inter[input[1]];
+					func = [i1, i2, in, this]() -> void {
+						this->interOutput[in] = this->interOutput[i1] + this->interOutput[i2];
+					};
+					this->forward.push_back(func);
+					break;
+
+			    case ADDITION_CONSTANT:
+			    	i1 = inter[input[0]];
+			    	i2 = param[0];
+			    	func = [i1, i2, in, this]() -> void {
+			    		this->interOutput[in] = this->interOutput[i1] + this->vectorParams[i2];
+			    	};
+			    	this->forward.push_back(func);
+					break;
+				
+			    case PRODUCT_CONSTANT:
+			    	i1 = inter[input[0]];
+			    	i2 = param[0];
+			    	func = [i1, i2, in, this]() -> void {
+			    		this->interOutput[in] = this->matrixParams[i2] * this->interOutput[i1];
+			    	};
+			    	this->forward.push_back(func);
+					break;
+				
+			    case HADAMARD:
+			    	i1 = inter[input[0]];
+					i2 = inter[input[1]];
+					func = [i1, i2, in, this]() -> void {
+						this->interOutput[in] = this->interOutput[i1].cwiseProduct(this->interOutput[i2]);
+					};
+					this->forward.push_back(func);
+					break;
+				
+			    case HADAMARD_CONSTANT:
+			    	i1 = inter[input[0]];
+			    	i2 = param[0];
+			    	func = [i1, i2, in, this]() -> void {
+			    		this->interOutput[in] = this->interOutput[i1].cwiseProduct(this->vectorParams[i2]);
+			    	};
+			    	this->forward.push_back(func);
+					break;
+				
+			    case SIGMOID:
+			    	i1 = inter[input[0]];
+			    	func = [i1, in, this]() -> void {
+			    		this->interOutput[in] = this->interOutput[i1].unaryExpr(&Sigmoid);
+			    	};
+			    	this->forward.push_back(func);
+					break;
+				
+			    case TANH:
+			    	i1 = inter[input[0]];
+			    	func = [i1, in, this]() -> void {
+			    		this->interOutput[in] = this->interOutput[i1].unaryExpr(&Tanh);
+			    	};
+			    	this->forward.push_back(func);
+					break;
 			}
 		}
 	}
+	this->nbForward = this->forward.size();
 	PRINT_END_FUNCTION()
-}
-
-function<void()> Network::getFunction(Graph* graph, int* inter, int node) {
-	PRINT_BEGIN_FUNCTION("getFunction")
-
-	if(node < this->nbInput) {
-		int o = inter[node];
-		PRINT_END_FUNCTION()
-		return [node, o, this]() -> void {
-			this->interOutput[o] = this->interInput[node];
-		};
-	} else {
-		int* input = graph->getInput(node);
-		int* param = graph->getParams(node);
-		int o = inter[node];
-		int i1;
-		int i2;
-		switch(graph->getOperation(node)) {
-			case ADDITION:
-				i1 = inter[input[0]];
-				i2 = inter[input[1]];
-				PRINT_END_FUNCTION()
-				return [i1, i2, o, this]() -> void {
-					this->interOutput[o] = this->interOutput[i1] + this->interOutput[i2];
-				};
-				break;
-
-		    case ADDITION_CONSTANT:
-		    	i1 = inter[input[0]];
-		    	i2 = param[0];
-		    	PRINT_END_FUNCTION()
-		    	return [i1, i2, o, this]() -> void {
-		    		this->interOutput[o] = this->interOutput[i1] + this->vectorParams[i2];
-		    	};
-				break;
-			
-		    case PRODUCT_CONSTANT:
-		    	i1 = inter[input[0]];
-		    	i2 = param[0];
-		    	PRINT_END_FUNCTION()
-		    	return [i1, i2, o, this]() -> void {
-		    		this->interOutput[o] = this->matrixParams[i2] * this->interOutput[i1];
-		    	};
-				break;
-			
-		    case HADAMARD:
-		    	i1 = inter[input[0]];
-				i2 = inter[input[1]];
-				PRINT_END_FUNCTION()
-				return [i1, i2, o, this]() -> void {
-					this->interOutput[o] = this->interOutput[i1].cwiseProduct(this->interOutput[i2]);
-				};
-				break;
-			
-		    case HADAMARD_CONSTANT:
-		    	i1 = inter[input[0]];
-		    	i2 = param[0];
-		    	PRINT_END_FUNCTION()
-		    	return [i1, i2, o, this]() -> void {
-		    		this->interOutput[o] = this->interOutput[i1].cwiseProduct(this->vectorParams[i2]);
-		    	};
-				break;
-			
-		    case SIGMOID:
-		    	i1 = inter[input[0]];
-		    	PRINT_END_FUNCTION()
-		    	return [i1, o, this]() -> void {
-		    		this->interOutput[o] = this->interOutput[i1].unaryExpr(&Sigmoid);
-		    	};
-				break;
-			
-		    case TANH:
-		    	i1 = inter[input[0]];
-		    	PRINT_END_FUNCTION()
-		    	return [i1, o, this]() -> void {
-		    		this->interOutput[o] = this->interOutput[i1].unaryExpr(&Tanh);
-		    	};
-				break;
-		}
-	}
-}
-
-int Network::minFreeVector(set<int> a) {
-	PRINT_BEGIN_FUNCTION("minFreeVector")
-
-	int j;
-	for(j = 0; a.count(j) == 1; j++);
-
-	PRINT_END_FUNCTION()
-	return j;
 }
 
 VectorXd* Network::forwardCalcul(VectorXd* input) {
@@ -305,10 +241,6 @@ VectorXd* Network::forwardCalcul(VectorXd* input) {
 	this->interInput = input;
 	for(int i = 0; i < this->nbForward; i++) {
 		this->forward[i]();
-		for(int j = 0; j < this->nbInter; j++) {
-			PRINT_LOG(this->interOutput[j].transpose());
-		}
-		PRINT_LOG("------------" + to_string(i) + "----------")
 	}
 	PRINT_END_FUNCTION()
 	return input;

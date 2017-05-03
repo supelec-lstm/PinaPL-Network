@@ -32,14 +32,10 @@ private:
     Eigen::MatrixXd* matrixParams;
 
     int nbForward;
-    std::function<void()>* forward;
+    std::vector<std::function<void()> > forward;
 
-    std::vector<std::vector<int> > getPath(Graph* graph);
-    int* getInterMemoryPath(Graph* graph);
-    void fillActionFunction(Graph* graph, int* inter);
-    std::function<void()> getFunction(Graph* graph, int* inter, int node);
-
-    int minFreeVector(std::set<int> a);
+    void fillOrder(int* inter, int* order, Graph* graph);
+    void fillActionFunction(int* inter, int* order, Graph* graph);
 
 public:
 

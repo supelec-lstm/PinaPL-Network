@@ -9,10 +9,15 @@ enum OperationType {
     ADDITION,
     ADDITION_CONSTANT,
     PRODUCT_CONSTANT,
+    PRODUCT_REVERSE,
     HADAMARD,
     HADAMARD_CONSTANT,
+    HADAMARD_REVERSE,+-
+    HADAMARD_MEMORY,
     SIGMOID,
-    TANH
+    SIGMOID_DERIVATE,
+    TANH,
+    TANH_DERIVATE
 };
 
 struct DimensionalError : public std::exception {
@@ -31,6 +36,8 @@ struct Node {
 	int nbParam;
 	std::vector<int> param;
 	bool isOutput;
+	bool isMemorized;
+	int memoryNumber;
 };
 
 struct VectorParam {
@@ -53,7 +60,7 @@ private:
 	int nbMatrixParams;
 
 	std::vector<Node> nodes;
-	std::vector<Node> output;
+	std::vector<int> output;
 
 	std::vector<VectorParam> vectorParams;
 	std::vector<MatrixParam> matrixParams;
@@ -92,6 +99,9 @@ public:
 	int* getParams(int j);
 
 	OperationType getOperation(int j);
+
+	bool isOutput(int j);
+	int indexOutput(int j);
 
 	int getSizeNode(int j);
 	int getSizeVector(int j);
