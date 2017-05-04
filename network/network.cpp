@@ -25,6 +25,7 @@ Network::Network(Graph* graph) {
 	this->nbNode = graph->getNbNode();
 	this->nbVector = graph->getNbVector();
 	this->nbMatrix = graph->getNbMatrix();
+	this->nbMemory = graph->getNbMemory();
 
 	this->vectorParams = new VectorXd[this->nbVector];
 	for(int i = 0; i < this->nbVector; i++) {
@@ -49,8 +50,7 @@ Network::Network(Graph* graph) {
 	}
 	this->nbInter++;
 
-	this->interOutput = new VectorXd[this->nbInter];
-	this->interResult = new VectorXd[this->nbOutput];
+	this->interResult = new VectorXd[this->nbInter];
 	this->fillActionFunction(inter, order, graph);
 
 	PRINT_END_FUNCTION()
@@ -158,7 +158,7 @@ void Network::fillActionFunction(int* inter, int* order, Graph* graph) {
 		int in = inter[node];
 		if(node < this->nbInput) {
 			function<void()> func = [node, in, this]() -> void {
-				this->interOutput[in] = this->interInput[node];
+				this->interResult[in] = this->interInput[node];
 			};
 			this->forward.push_back(func);
 		} else {
@@ -173,7 +173,7 @@ void Network::fillActionFunction(int* inter, int* order, Graph* graph) {
 					i1 = inter[input[0]];
 					i2 = inter[input[1]];
 					func = [i1, i2, in, this]() -> void {
-						this->interOutput[in] = this->interOutput[i1] + this->interOutput[i2];
+						this->interResult[in] = this->interResult[i1] + this->interResult[i2];
 					};
 					this->forward.push_back(func);
 					break;
@@ -182,7 +182,7 @@ void Network::fillActionFunction(int* inter, int* order, Graph* graph) {
 			    	i1 = inter[input[0]];
 			    	i2 = param[0];
 			    	func = [i1, i2, in, this]() -> void {
-			    		this->interOutput[in] = this->interOutput[i1] + this->vectorParams[i2];
+			    		this->interResult[in] = this->interResult[i1] + this->vectorParams[i2];
 			    	};
 			    	this->forward.push_back(func);
 					break;
@@ -191,7 +191,7 @@ void Network::fillActionFunction(int* inter, int* order, Graph* graph) {
 			    	i1 = inter[input[0]];
 			    	i2 = param[0];
 			    	func = [i1, i2, in, this]() -> void {
-			    		this->interOutput[in] = this->matrixParams[i2] * this->interOutput[i1];
+			    		this->interResult[in] = this->matrixParams[i2] * this->interResult[i1];
 			    	};
 			    	this->forward.push_back(func);
 					break;
@@ -200,7 +200,7 @@ void Network::fillActionFunction(int* inter, int* order, Graph* graph) {
 			    	i1 = inter[input[0]];
 					i2 = inter[input[1]];
 					func = [i1, i2, in, this]() -> void {
-						this->interOutput[in] = this->interOutput[i1].cwiseProduct(this->interOutput[i2]);
+						this->interResult[in] = this->interResult[i1].cwiseProduct(this->interResult[i2]);
 					};
 					this->forward.push_back(func);
 					break;
@@ -209,7 +209,7 @@ void Network::fillActionFunction(int* inter, int* order, Graph* graph) {
 			    	i1 = inter[input[0]];
 			    	i2 = param[0];
 			    	func = [i1, i2, in, this]() -> void {
-			    		this->interOutput[in] = this->interOutput[i1].cwiseProduct(this->vectorParams[i2]);
+			    		this->interResult[in] = this->interResult[i1].cwiseProduct(this->vectorParams[i2]);
 			    	};
 			    	this->forward.push_back(func);
 					break;
@@ -217,7 +217,7 @@ void Network::fillActionFunction(int* inter, int* order, Graph* graph) {
 			    case SIGMOID:
 			    	i1 = inter[input[0]];
 			    	func = [i1, in, this]() -> void {
-			    		this->interOutput[in] = this->interOutput[i1].unaryExpr(&Sigmoid);
+			    		this->interResult[in] = this->interResult[i1].unaryExpr(&Sigmoid);
 			    	};
 			    	this->forward.push_back(func);
 					break;
@@ -225,11 +225,27 @@ void Network::fillActionFunction(int* inter, int* order, Graph* graph) {
 			    case TANH:
 			    	i1 = inter[input[0]];
 			    	func = [i1, in, this]() -> void {
-			    		this->interOutput[in] = this->interOutput[i1].unaryExpr(&Tanh);
+			    		this->interResult[in] = this->interResult[i1].unaryExpr(&Tanh);
 			    	};
 			    	this->forward.push_back(func);
 					break;
 			}
+		}
+		if(graph->isMemorized(node)) {
+			int i = graph->indexMemory(node);
+			int o = inter[node];
+			function<void()> func = [i, o, this]() -> void {
+				this->interMemory[i] = this->interResult[o];
+			};
+			this->forward.push_back(func);
+		}
+		if(graph->isOutput(node)) {
+			int i = graph->indexOutput(node);
+			int o = inter[node];
+			function<void()> func = [i, o, this]() -> void {
+				this->interOutput[i] = this->interResult[o];
+			};
+			this->forward.push_back(func);
 		}
 	}
 	this->nbForward = this->forward.size();
@@ -238,15 +254,22 @@ void Network::fillActionFunction(int* inter, int* order, Graph* graph) {
 
 Graph* Network::getReverseGraph(Graph* graph) {
 
+	this->nbReverseInput = this->nbInput + this->nbMemory;
+ 
 	//Graph* reverseGraph = new Graph();
 }
 
-VectorXd* Network::forwardCalcul(VectorXd* input) {
+Memory Network::forwardCalcul(VectorXd* input) {
 	PRINT_BEGIN_FUNCTION("forwardCalcul")
 	this->interInput = input;
+	this->interOutput = new VectorXd[this->nbOutput];
+	this->interMemory = new VectorXd[this->nbMemory];
 	for(int i = 0; i < this->nbForward; i++) {
 		this->forward[i]();
 	}
+	Memory res;
+	res.output = this->interOutput;
+	res.memory = this->interMemory;
 	PRINT_END_FUNCTION()
-	return input;
+	return res;
 }

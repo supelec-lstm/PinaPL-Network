@@ -8,7 +8,6 @@
 #include "graph.hpp"
 
 struct Memory {
-    Eigen::VectorXd* input;
     Eigen::VectorXd* output;
     Eigen::VectorXd* memory;
 };
@@ -22,11 +21,15 @@ private:
     int nbNode;
     int nbVector;
     int nbMatrix;
+    int nbMemory;
 
     int nbInter;
 
+    int nbReverseInput;
+
     Eigen::VectorXd* interOutput;
     Eigen::VectorXd* interInput;
+    Eigen::VectorXd* interMemory;
     Eigen::VectorXd* interResult;
     Eigen::VectorXd* vectorParams;
     Eigen::MatrixXd* matrixParams;
@@ -43,7 +46,7 @@ public:
 
     Network(Graph* graph);
 
-    Eigen::VectorXd* forwardCalcul(Eigen::VectorXd* input);
+    Memory forwardCalcul(Eigen::VectorXd* input);
 };
 
 #endif //HEADER_NETWORK

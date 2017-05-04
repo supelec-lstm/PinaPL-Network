@@ -140,6 +140,9 @@ int Graph::addNodeProductConstantTranspose(int e, int p) {
 int Graph::addNodeHadamard(int e1, int e2) {
 	PRINT_BEGIN_FUNCTION("addNodeHadamard")
 
+	this->setMemory(e1);
+	this->setMemory(e2);
+
 	int s1 = this->getSizeNode(e1);
 	int s2 = this->getSizeNode(e2);
 	if(s1 != s2) {
@@ -177,8 +180,11 @@ int Graph::addNodeSigmoid(int e) {
 	int* entry = new int[1];
 	entry[0] = e;
 
+	int res = this->addNode(SIGMOID, 1, entry, 0, nullptr, s);
+	this->setMemory(res);
+
 	PRINT_END_FUNCTION()
-	return this->addNode(SIGMOID, 1, entry, 0, nullptr, s);
+	return res;
 }
 
 int Graph::addNodeSigmoidDerivate(int e) {
@@ -188,8 +194,11 @@ int Graph::addNodeSigmoidDerivate(int e) {
 	int* entry = new int[1];
 	entry[0] = e;
 
+	int res = this->addNode(SIGMOID_DERIVATE, 1, entry, 0, nullptr, s);
+	this->setMemory(res);
+
 	PRINT_END_FUNCTION()
-	return this->addNode(SIGMOID_DERIVATE, 1, entry, 0, nullptr, s);
+	return res;
 }
 
 int Graph::addNodeTanh(int e) {
@@ -294,20 +303,24 @@ int Graph::addBlock(int x1, int m1, int x2, int m2, int b) {
 void Graph::setOutput(int n) {
 	PRINT_BEGIN_FUNCTION("setOutput")
 
-	this->nodes[n].isOutput = true;
-	this->nodes[n].outputId = this->nbOutput;
-	this->output.push_back(n);
-	this->nbOutput++;
+	if(!this->nodes[n].isOutput) {
+		this->nodes[n].isOutput = true;
+		this->nodes[n].outputId = this->nbOutput;
+		this->output.push_back(n);
+		this->nbOutput++;
+	}
 	PRINT_END_FUNCTION()
 }
 
 void Graph::setMemory(int n) {
 	PRINT_BEGIN_FUNCTION("setMemory")
 
-	this->nodes[n].isMemorized = true;
-	this->nodes[n].memoryId = this->nbMemorized;
-	this->memory.push_back(n);
-	this->nbMemorized++;
+	if(!this->nodes[n].isMemorized) {
+		this->nodes[n].isMemorized = true;
+		this->nodes[n].memoryId = this->nbMemorized;
+		this->memory.push_back(n);
+		this->nbMemorized++;
+	}	
 	PRINT_END_FUNCTION()
 }
 
@@ -359,6 +372,13 @@ int Graph::getNbMatrix() {
 	return this->nbMatrixParams;
 }
 
+int Graph::getNbMemory() {
+	PRINT_BEGIN_FUNCTION("getNbMatrix")
+	PRINT_END_FUNCTION()
+	return this->nbMemorized;
+}
+
+
 int* Graph::getOutput(int j) {
 	PRINT_BEGIN_FUNCTION("getNbOutput")
 	PRINT_END_FUNCTION()
@@ -405,11 +425,15 @@ bool Graph::isOutput(int j) {
 }
 
 int Graph::indexOutput(int j) {
-	for(int i = 0; i < this->nbOutput; i++) {
-		if(this->output[i] == j) {
-			return i;
-		}
-	}
+	return this->nodes[j].outputId;
+}
+
+bool Graph::isMemorized(int j) {
+	return this->nodes[j].isMemorized;
+}
+
+int Graph::indexMemory(int j) {
+	return this->nodes[j].memoryId;
 }
 
 int Graph::getSizeNode(int j) {

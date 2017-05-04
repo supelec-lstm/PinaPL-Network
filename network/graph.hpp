@@ -107,6 +107,7 @@ public:
 	int getNbNode();
 	int getNbVector();
 	int getNbMatrix();
+	int getNbMemory();
 
 	int* getOutput(int j);
 	int* getInput(int j);
@@ -116,6 +117,9 @@ public:
 
 	bool isOutput(int j);
 	int indexOutput(int j);
+
+	bool isMemorized(int j);
+	int indexMemory(int j);
 
 	int getSizeNode(int j);
 	int getSizeVector(int j);
