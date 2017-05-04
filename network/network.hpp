@@ -37,6 +37,8 @@ private:
     void fillOrder(int* inter, int* order, Graph* graph);
     void fillActionFunction(int* inter, int* order, Graph* graph);
 
+    Graph* getReverseGraph(Graph* graph);
+
 public:
 
     Network(Graph* graph);

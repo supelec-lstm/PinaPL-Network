@@ -236,6 +236,11 @@ void Network::fillActionFunction(int* inter, int* order, Graph* graph) {
 	PRINT_END_FUNCTION()
 }
 
+Graph* Network::getReverseGraph(Graph* graph) {
+
+	//Graph* reverseGraph = new Graph();
+}
+
 VectorXd* Network::forwardCalcul(VectorXd* input) {
 	PRINT_BEGIN_FUNCTION("forwardCalcul")
 	this->interInput = input;

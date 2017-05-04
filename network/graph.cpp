@@ -19,6 +19,7 @@ Graph::Graph(int nbInput, vector<int> sizeInput, int nbVectorParams, vector<int>
 	this->nbNode = nbInput;
 	this->nbVectorParams = nbVectorParams;
 	this->nbMatrixParams = nbMatrixParams;
+	this->nbMemorized = 0;
 
 	for(int i = 0; i < this->nbInput; i++){
 		Node node;
@@ -119,6 +120,23 @@ int Graph::addNodeProductConstant(int e, int p) {
 	return this->addNode(PRODUCT_CONSTANT, 1, entry, 1, param, this->getSizeMatrixRows(p));
 }
 
+int Graph::addNodeProductConstantTranspose(int e, int p) {
+	PRINT_BEGIN_FUNCTION("addNodeProductConstantTranspose")
+
+	int s1 = this->getSizeNode(e);
+	int s2 = this->getSizeMatrixCols(p);
+	if(s1 != s2) {
+		throw DimensionalError();
+	}
+	int* entry = new int[1];
+	entry[0] = e;
+	int* param = new int[1];
+	param[0] = p;
+
+	PRINT_END_FUNCTION()
+	return this->addNode(PRODUCT_CONSTANT_TRANSPOSE, 1, entry, 1, param, this->getSizeMatrixRows(p));
+}
+
 int Graph::addNodeHadamard(int e1, int e2) {
 	PRINT_BEGIN_FUNCTION("addNodeHadamard")
 
@@ -163,6 +181,17 @@ int Graph::addNodeSigmoid(int e) {
 	return this->addNode(SIGMOID, 1, entry, 0, nullptr, s);
 }
 
+int Graph::addNodeSigmoidDerivate(int e) {
+	PRINT_BEGIN_FUNCTION("addNodeSigmoidDerivate")
+
+	int s = this->getSizeNode(e);
+	int* entry = new int[1];
+	entry[0] = e;
+
+	PRINT_END_FUNCTION()
+	return this->addNode(SIGMOID_DERIVATE, 1, entry, 0, nullptr, s);
+}
+
 int Graph::addNodeTanh(int e) {
 	PRINT_BEGIN_FUNCTION("addNodeTanh")
 
@@ -172,6 +201,62 @@ int Graph::addNodeTanh(int e) {
 
 	PRINT_END_FUNCTION()
 	return this->addNode(TANH, 1, entry, 0, nullptr, s);
+}
+
+int Graph::addNodeTanhDerivate(int e) {
+	PRINT_BEGIN_FUNCTION("addNodeTanhDerivate")
+
+	int s = this->getSizeNode(e);
+	int* entry = new int[1];
+	entry[0] = e;
+
+	PRINT_END_FUNCTION()
+	return this->addNode(TANH_DERIVATE, 1, entry, 0, nullptr, s);
+}
+
+int Graph::addReverseNode(int n, int* input) {
+	if (n > 1) {
+		int a = input[0];
+		for(int i = 1; i < n; i++) {
+			a = this->addNodeAddition(a, input[i]);
+		}
+		return a;
+	}
+	return input[0];
+}
+
+int Graph::addReverseNodeAddition(int n, int* input) {
+	return this->addReverseNode(n, input);
+}
+
+int Graph::addReverseNodeAdditionConstant(int n, int* input, int p) {
+	int a = this->addReverseNode(n, input);
+	this->nodes[a].nbParam++;
+	this->nodes[a].param.push_back(p);
+	return a;
+}
+
+int Graph::addReverseNodeProduct(int n, int* input, int p) {
+	return this->addNodeProductConstantTranspose(this->addReverseNode(n, input), p);
+}
+
+int* Graph::addReverseNodeHadamard(int n, int* input, int i1, int i2) {
+	int a = this->addReverseNode(n, input);
+	int* output = new int[2];
+	output[0] = this->addNodeHadamard(a, i1);
+	output[1] = this->addNodeHadamard(a, i2);
+}
+
+int Graph::addReverseNodeHadamardConstant(int n, int* input, int p) {
+	return this->addNodeHadamardConstant(this->addReverseNode(n, input), p);
+}
+
+int Graph::addReverseNodeSigmoid(int n, int* input, int i) {
+	return this->addNodeHadamard(this->addReverseNode(n, input), this->addNodeSigmoidDerivate(i));
+}
+
+int Graph::addReverseNodeTanh(int n, int* input, int i) {
+	return this->addNodeHadamard(this->addReverseNode(n, input), this->addNodeTanhDerivate(i));
 }
 
 int Graph::addPerceptron(int x, int m, int b) {
@@ -206,14 +291,23 @@ int Graph::addBlock(int x1, int m1, int x2, int m2, int b) {
 	return this->addNodeTanh(y);
 }
 
-int Graph::add
-
 void Graph::setOutput(int n) {
 	PRINT_BEGIN_FUNCTION("setOutput")
 
 	this->nodes[n].isOutput = true;
+	this->nodes[n].outputId = this->nbOutput;
 	this->output.push_back(n);
 	this->nbOutput++;
+	PRINT_END_FUNCTION()
+}
+
+void Graph::setMemory(int n) {
+	PRINT_BEGIN_FUNCTION("setMemory")
+
+	this->nodes[n].isMemorized = true;
+	this->nodes[n].memoryId = this->nbMemorized;
+	this->memory.push_back(n);
+	this->nbMemorized++;
 	PRINT_END_FUNCTION()
 }
 
